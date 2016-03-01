@@ -202,6 +202,10 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
+        if (executionType == null) {
+            executionType = ExecutionType.PARALLEL;
+        }
+        
         boolean resume = false;
         Map<String, SubBuild> successBuildMap = new HashMap<String, SubBuild>();
         Map<String, SubBuild> resumeBuildMap = new HashMap<String, SubBuild>();
@@ -354,7 +358,7 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
             injectEnvVars(build, listener, phaseCounters.toMap());
             return true;
         }
-
+        
         int poolSize = executionType.isParallel() ? subTasks.size() : 1;
         ExecutorService executor = Executors.newFixedThreadPool(poolSize);
         Set<Result> jobResults = new HashSet<Result>();
