@@ -44,7 +44,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileNotFoundException;
 
-import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.lib.envinject.EnvInjectLogger;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilder;
@@ -62,7 +61,6 @@ import com.tikal.jenkins.plugins.multijob.counters.CounterManager;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import groovy.util.*;
-import hudson.plugins.parameterizedtrigger.AbstractBuildParameters.DontTriggerException;
 import java.util.concurrent.CancellationException;
 import jenkins.model.CauseOfInterruption;
 
@@ -237,13 +235,20 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
         Map<PhaseSubJob, PhaseJobsConfig> phaseSubJobs = new LinkedHashMap<PhaseSubJob, PhaseJobsConfig>(
                 phaseJobs.size());
         final CounterManager phaseCounters = new CounterManager();
-
+        boolean aggragatedTestResults = false;
         for (PhaseJobsConfig phaseJobConfig : phaseJobs) {
             Item item = jenkins.getItem(phaseJobConfig.getJobName(), multiJobBuild.getParent(), AbstractProject.class);
             if (item instanceof AbstractProject) {
                 AbstractProject job = (AbstractProject) item;
                 phaseSubJobs.put(new PhaseSubJob(job), phaseJobConfig);
             }
+            if (phaseJobConfig.isAggregatedTestResults()) {
+                aggragatedTestResults = true;
+            }
+        }
+        
+        if (aggragatedTestResults) {
+            multiJobBuild.addTestsResult();
         }
 
         List<SubTask> subTasks = new ArrayList<SubTask>();
@@ -535,6 +540,10 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
                         addBuildEnvironmentVariables(subTask.multiJobBuild, jobBuild, listener);
                         subTask.result = result;
                     }
+                }
+
+                if (subTask.phaseConfig.isAggregatedTestResults()) {
+                    MultiJobTestAggregator.aggregateResultsFromBuild(jobBuild, subTask.multiJobBuild.getMultiJobTestResults(), listener);
                 }
             } catch (Exception e) {
                 if (e instanceof InterruptedException) {
