@@ -21,6 +21,7 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
+import hudson.model.StringParameterValue;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameters;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameters.DontTriggerException;
 import hudson.plugins.parameterizedtrigger.FileBuildParameters;
@@ -420,7 +421,7 @@ public class PhaseJobsConfig implements Describable<PhaseJobsConfig> {
 			AbstractProject project, boolean isCurrentInclude)
 			throws IOException, InterruptedException {
 		List<Action> actions = new ArrayList<Action>();
-		ParametersAction params = null;
+		 ParametersAction params = null;
 		LinkedList<ParameterValue> paramsValuesList = new LinkedList<ParameterValue>();
 
 		List originalActions = project.getActions();
@@ -479,9 +480,24 @@ public class PhaseJobsConfig implements Describable<PhaseJobsConfig> {
 				}
 			}
 		}
+                String parentJobName = project.getName();
+                String parentBuildNumber = Integer.toString(build.getNumber());
 
-		if (params != null)
-			actions.add(params);
+		LinkedList<ParameterValue> paramsValuesList2 = new LinkedList<ParameterValue>();
+                paramsValuesList2.add(new StringParameterValue("PARENT_JOB_NAME", parentJobName));
+                paramsValuesList2.add(new StringParameterValue("PARENT_BUILD_NUMBER", parentBuildNumber));
+                paramsValuesList2.add(new StringParameterValue("PARENT_BUILD_NAME", String.format("%s-%s", parentJobName, parentBuildNumber)));
+
+		ParametersAction params2 = new ParametersAction(
+                        paramsValuesList2.toArray(new ParameterValue[paramsValuesList2.size()]));
+
+                if (params == null) {
+                    params = params2;
+                } else {
+                    params = mergeParameters(params, params2);
+                }
+
+                actions.add(params);
 
 		return actions;
 	}
