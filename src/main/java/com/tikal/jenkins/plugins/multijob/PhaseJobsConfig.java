@@ -480,7 +480,7 @@ public class PhaseJobsConfig implements Describable<PhaseJobsConfig> {
 				}
 			}
 		}
-                String parentJobName = project.getName();
+                String parentJobName = build.getProject().getName();
                 String parentBuildNumber = Integer.toString(build.getNumber());
 
 		LinkedList<ParameterValue> paramsValuesList2 = new LinkedList<ParameterValue>();
